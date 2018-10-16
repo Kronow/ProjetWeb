@@ -8,6 +8,9 @@ qwuattier@gmail.com
 Système d'information Web
 
 
+
+
+
 Pour ce semestre, nous devons réalisé une application web.
 J'ai décidé de réalisé un site web permettant le partage de fichier.
 
@@ -17,6 +20,10 @@ ainsi qu'un nouveau language pour la programation de l'application web, comme No
 Le language que j'ai choisi est NodeJS.
 
 Et l'application devra intégrer les fonctionnalités suivante :
-  - Créer des dossiers
+  - Créer et parcourrir les dossiers
   - Stocker des documents / images / ...
   - Télécharger les fichiers stocké
+  - Suprimmer les fichiers et dossiers
+  
+  
+
