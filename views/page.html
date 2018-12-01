@@ -11,162 +11,183 @@
 		</div>
 
 		<h1>
-			<div id="directoryname"></div> 
+			<div id="foldername"></div> 
 		</h1>
-		<div id="directory"></div>
+		<div id="folder"></div>
 		<p>
-			<input type="text" id="namedirectory"/>
-			<input type="button" id="newdirectory" value="Ajouter un dossier" />
+			<input type="text" id="namefolder"/>
+			<input type="button" id="newfolder" value="Ajouter un dossier" />
 		</p>
 		
 
 		<h1>Fichier : </h1>
 		<div id="file"></div>
 		<p>
-			<input id="cfile" type="file" />
+			<input id="cfile" name="filetoupload" type="file" />
 			<br>
 			<input type="button" id="newfile" value="Ajouter un fichier" />
 		</p>	
 
 
-        <script src="http://code.jquery.com/jquery-1.10.1.min.js" ></script>
-        <script src="/socket.io/socket.io.js"></script> 
+        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script> 
+		
+		<!-- 
+			La page n'est pas trouver
 
+			<script src="./page.js"></script>
+		--> 
 
-        <script>
-	    var path = "./static";
-	    var parent = ".";
+		<script>
+			var path = "./static";
+			var parent = ".";
 
-            var socket = io.connect('http://localhost:8080');
-	    
+			var socket = io.connect('http://localhost:8080');
 
-	    socket.emit('getDocument', path);
-
-
-// Gestion des Fichiers
-
-        socket.on('file', function(file) {
-		var html = "<ul>";
-                for(var i =0; i < file.length; i++ ){
-		    html += "<li>"
-		    html += '<input type="button" value="Supprimer" onclick="deletefile(\''+file[i]+'\')"/> \t ';
-		    html += '<input type="button" value="'+file[i]+'" onclick="downloadfile(\''+file[i]+'\')"/> \t ';
-		    html += "</li>";
-		}
-		html += "</ul>";
-		$('#file').html(html);
-            });
-
-	    
-	    function downloadfile(name){
-		console.log('downloadfile : '+name);
-	    }
-
-	    function deletefile(name){
-		socket.emit('deletefile', path, name);
-	        socket.emit('getDocument', path);
-	    }
-
-		var file = [];
-		$('#cfile').on('change', function() {
-			file = this.files;
-		});
-
-	    $('#newfile').click(function () {
-			console.log("addFile");
-			
-			// Emit les fichiers envoyer
-			socket.emit('addfile', path, file);
-			
-			
+			/** 
+			 * Demande les fichiers et les dossiers lors du chargement de la page
+			*/
 			socket.emit('getDocument', path);
-        });
 
-// Gestion des Dossiers
+			/**
+			 * Gestion des DÃ©placements dans les dossiers
+			*/
+			function getfolder(name) {
+				parent = path;
+				path += "/"+name;
+				
+				$("#return").html("<input type='button' id='returnbutton' value='Retour' onclick='returnbutton();' />");
+				socket.emit('getDocument', path);
+			}
 
-            socket.on('directory', function(dir) {
-		var html = "<ul>";
-                for(var i = 0; i < dir.length; i++ ){
-		    html += "<li>"
-		    html += '<input type="button" value="Supprimer" onclick="deletedirectory(\''+dir[i]+'\');"/> \t ';
-		    html += '<input type="button" value="Parcourir" onclick="getdirectory(\''+dir[i]+'\');"/> \t ';
-		    html += dir[i];
-		    html += "</li>";
-		}
-		html += "</ul>";
-		$('#directory').html(html);
-		
-		//retourne '' si path='./static'
-		var c = getDirectory(path);
-		$('#directoryname').html('Dossier : '+c);
-            });
+			function returnbutton() {
+				path = parent;
+				parent = newParent(path);
+				if(parent == ".") $("#return").html("");
+				socket.emit('getDocument', path);
+			}
 
-	    function getDirectory(p){
-		var tab = p.split("/");
-		var c = '';
-		for(var i = 2; i < tab.length;i++){
-		    c += '/'+tab[i];
-		}
-		return c;
-	    }
+			function newParent(p){
+				var c = ".";
+				var tab = p.split("/");
+				for(var i = 1; i < (tab.length-1); i++){
+					c += "/"+tab[i];
+				}
+				return c;
+			}
 
 
+			/*** Gestion des fichiers | Client ***/
 
-	    $('#newdirectory').click(function () {
-		var name = $('#namedirectory').val();
+			/**
+			 * Affichage des fichiers
+			*/
+			socket.on('file', function(file) {
+				var html = "<ul>";
+				for(var i = 0; i < file.length; i++ ){
+					html += "<li>"
+					html += '<input type="button" value="Supprimer" onclick="deletefile(\''+file[i]+'\')"/> \t ';
+					html += '<input type="button" value="'+file[i]+'" onclick="downloadfile(\''+file[i]+'\')"/> \t ';
+					html += "</li>";
+				}
+				html += "</ul>";   
+				$('#file').html(html);
+			});
 
-		if(name != "") socket.emit('adddirectory', path, name);
-		socket.emit('getDocument', path);
+			/** 
+			 * Fonction telechagement du fichier
+			*/
+			function downloadfile(name){
+				console.log('downloadfile : '+name);
+			}
 
-		$('#namedirectory').val("");		
-            });
+			/** 
+			 * Fonction suppression du fichier
+			*/
+			function deletefile(name){
+				socket.emit('deletefile', path, name);
+				socket.emit('getDocument', path);
+			}
 
-	    $('#directorybutton').click(function () {
-		var name = $('#directorybutton').val();
-		socket.emit('adddirectory', path, name);
-		socket.emit('getDocument', path);
-            });
+						/** 
+			 * Stock le fichier choisi par l'utilisateur
+			*/
+			var tabfile = [];
 
-	    function deletedirectory(name){
-		socket.emit('deletedirectory', path, name);
-		socket.emit('getDocument', path);
-	    }
+			$('#cfile').on('change', function() {
+				// this.files de la balise cfile
+				tabfile = this.files;
+			});
 
-	    
-
-
-
-
-
-
-// Gestion des Déplacements dans les Dossiers
-
-	    function getdirectory(name) {
-		parent = path;
-		path += "/"+name;
-		
-		$("#return").html("<input type='button' id='returnbutton' value='Retour' onclick='returnbutton();' />");
-		socket.emit('getDocument', path);
-            }
-
-	    function returnbutton() {
-		path = parent;
-		parent = newParent(path);
-		if(parent == ".") $("#return").html("");
-
-		socket.emit('getDocument', path);
-            }
-
-	    function newParent(p){
-		var c = ".";
-    		var tab = p.split("/");
-    		for(var i = 1; i < (tab.length-1); i++){
-		   c += "/"+tab[i];
-    		}
-		return c;
-	    }
+			/** 
+			 * Ajoute un fichier dans le dossier
+			*/
+			$('#newfile').click(function () {
+				console.log("addFile");
+				socket.emit('addfile', path, tabfile);
+				socket.emit('getDocument', path);
+			});
 
 
-        </script>
+
+			/*** Gestion des dossiers | Client ***/
+
+			/**
+			 * Affichage des dossiers
+			*/
+			socket.on('folder', function(dir) {
+				var html = "<ul>";
+				for(var i = 0; i < dir.length; i++ ){
+					html += "<li>"
+					html += '<input type="button" value="Supprimer" onclick="deletefolder(\''+dir[i]+'\');"/> \t ';
+					html += '<input type="button" value="Parcourir" onclick="getfolder(\''+dir[i]+'\');"/> \t ';
+					html += dir[i];
+					html += "</li>";
+				}
+				html += "</ul>";
+				$('#folder').html(html);
+
+				//retourne '' si path='./static'
+				var c = getFolder(path);
+				$('#foldername').html('Dossier : '+c);
+			});
+
+
+
+			/**
+			 * Reprend le nom des dossiers parcourru
+			*/
+			function getFolder(p){
+				var tab = p.split("/");
+				var c = '';
+				for(var i = 2; i < tab.length;i++){
+					c += '/'+tab[i];
+				}
+				return c;
+			}
+
+
+			/**
+			 * Ajoute le Dossier
+			*/
+			$('#newfolder').click(function () {
+				var name = $('#namefolder').val();
+
+				if(name != "") socket.emit('addfolder', path, name);
+				socket.emit('getDocument', path);
+
+				$('#namefolder').val("");		
+			});
+
+
+			/**
+			 * Supprimme le dossier
+			*/
+			function deletefolder(name){
+				socket.emit('deletefolder', path, name);
+				socket.emit('getDocument', path);
+			}
+
+		</script> 
     </body>
 </html>
